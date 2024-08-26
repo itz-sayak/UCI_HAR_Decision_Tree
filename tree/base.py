@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from typing import Literal, Union, Tuple, Any
 from dataclasses import dataclass
-from .utils import entropy, gini_index, mean_squared_error
+from .utils import entropy, gini_index, mean_squared_error, check_if_real
 
 @dataclass
 class DecisionTree:
