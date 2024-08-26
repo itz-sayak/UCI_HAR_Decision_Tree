@@ -1,77 +1,23 @@
-"""
-DecisionTree Class Implementation
-
-This module contains the implementation of a Decision Tree classifier and regressor. The `DecisionTree` class can be 
-used for both classification and regression tasks, depending on the criterion specified. It supports the following criteria:
-- "information_gain" for classification using entropy.
-- "gini_index" for classification using the Gini index.
-- "mse" for regression using the mean squared error.
-
-Classes:
-    DecisionTree: A class to build and train a decision tree.
-
-Functions:
-    fit(X, y): Trains the decision tree on the provided dataset.
-    predict(X): Predicts the class labels or values for the provided data.
-    plot(): Plots the structure of the decision tree.
-    get_params(deep=True): Returns the parameters of the DecisionTree object.
-    set_params(**params): Sets the parameters of the DecisionTree object.
-"""
 
 import numpy as np
 import pandas as pd
 from typing import Literal, Union, Tuple, Any
 from dataclasses import dataclass
-from .utils import entropy, gini_index, mean_squared_error, check_if_real
+from .utils import entropy, gini_index, mean_squared_error
 
 @dataclass
 class DecisionTree:
-    """
-    DecisionTree(criterion: Literal["information_gain", "gini_index"], max_depth: int = 5)
-
-    A class to build and train a decision tree classifier or regressor.
-
-    Attributes:
-        criterion (str): The function to measure the quality of a split. Supported criteria are "information_gain", "gini_index", and "mse".
-        max_depth (int): The maximum depth of the tree. Default is 5.
-        tree_ (Any): The structure of the trained decision tree.
-
-    Methods:
-        fit(X, y): Trains the decision tree on the provided dataset.
-        _fit(X, y, depth): Recursive function to build the tree.
-        _best_split(X, y): Finds the best feature and threshold to split the data.
-        split_data(X, y, attribute, value): Splits the data according to an attribute.
-        _calculate_score(left_y, right_y): Calculates the score of a split.
-        _information_gain(left_y, right_y): Computes the information gain of a split.
-        _gini_index(left_y, right_y): Computes the Gini index of a split.
-        _mean_squared_error(left_y, right_y): Computes the mean squared error (MSE) of a split.
-        _most_common_label(y): Returns the most common label in the series.
-        predict(X): Predicts the class labels or values for the provided data.
-        _predict(sample, tree): Traverses the tree to get the prediction for a single sample.
-        plot(): Plots the structure of the decision tree.
-        get_params(deep=True): Returns the parameters of the DecisionTree object.
-        set_params(**params): Sets the parameters of the DecisionTree object.
-    """
+    criterion: Literal["information_gain", "gini_index"]
+    max_depth: int
 
     def __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 5):
-        """
-        Initializes the DecisionTree with a given criterion and maximum depth.
-
-        Args:
-            criterion (str): The function to measure the quality of a split.
-            max_depth (int): The maximum depth of the tree.
-        """
         self.criterion = criterion
         self.max_depth = max_depth
         self.tree_ = None
 
     def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]) -> None:
         """
-        Trains the decision tree on the provided dataset.
-
-        Args:
-            X (Union[np.ndarray, pd.DataFrame]): Feature matrix.
-            y (Union[np.ndarray, pd.Series]): Target vector.
+        Function to train and construct the decision tree
         """
         if isinstance(X, np.ndarray):
             X = pd.DataFrame(X)
@@ -85,15 +31,7 @@ class DecisionTree:
 
     def _fit(self, X: pd.DataFrame, y: pd.Series, depth: int) -> Any:
         """
-        Recursive function to build the decision tree.
-
-        Args:
-            X (pd.DataFrame): Feature matrix.
-            y (pd.Series): Target vector.
-            depth (int): Current depth of the tree.
-
-        Returns:
-            Any: The structure of the tree node or the label/value if a leaf node is reached.
+        Recursive function to construct the tree.
         """
         unique_classes = y.unique()
         if len(unique_classes) == 1:
@@ -127,14 +65,7 @@ class DecisionTree:
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
         """
-        Finds the best feature and threshold to split the data.
-
-        Args:
-            X (pd.DataFrame): Feature matrix.
-            y (pd.Series): Target vector.
-
-        Returns:
-            Tuple[str, Any, float]: The best feature, the best threshold, and the best score.
+        Function to find the best split based on the criterion.
         """
         best_feature = None
         best_threshold = None
@@ -166,16 +97,7 @@ class DecisionTree:
 
     def split_data(self, X: pd.DataFrame, y: pd.Series, attribute: str, value: Any) -> Tuple[pd.Series, pd.Series]:
         """
-        Splits the data according to an attribute and a given value.
-
-        Args:
-            X (pd.DataFrame): Feature matrix.
-            y (pd.Series): Target vector.
-            attribute (str): The attribute/feature to split on.
-            value (Any): The value to split on.
-
-        Returns:
-            Tuple[pd.Series, pd.Series]: The split target vectors for the left and right branches.
+        Function to split the data according to an attribute.
         """
         if pd.api.types.is_numeric_dtype(X[attribute]):
             left_mask = X[attribute] <= value
@@ -188,14 +110,7 @@ class DecisionTree:
 
     def _calculate_score(self, left_y: pd.Series, right_y: pd.Series) -> float:
         """
-        Calculates the score of a split based on the criterion.
-
-        Args:
-            left_y (pd.Series): Target vector for the left branch.
-            right_y (pd.Series): Target vector for the right branch.
-
-        Returns:
-            float: The score for the split.
+        Function to calculate the score for the split
         """
         if self.criterion == "information_gain":
             return self._information_gain(left_y, right_y)
@@ -206,14 +121,7 @@ class DecisionTree:
 
     def _information_gain(self, left_y: pd.Series, right_y: pd.Series) -> float:
         """
-        Computes the information gain of a split.
-
-        Args:
-            left_y (pd.Series): Target vector for the left branch.
-            right_y (pd.Series): Target vector for the right branch.
-
-        Returns:
-            float: The information gain of the split.
+        Function to calculate the information gain
         """
         total_length = len(left_y) + len(right_y)
         total_entropy = entropy(pd.concat([left_y, right_y]))
@@ -226,54 +134,27 @@ class DecisionTree:
 
     def _gini_index(self, left_y: pd.Series, right_y: pd.Series) -> float:
         """
-        Computes the Gini index of a split.
-
-        Args:
-            left_y (pd.Series): Target vector for the left branch.
-            right_y (pd.Series): Target vector for the right branch.
-
-        Returns:
-            float: The Gini index of the split.
+        Function to calculate the Gini index
         """
-        total_length = len(left_y) + len(right_y)
-        left_weight = len(left_y) / total_length
-        right_weight = len(right_y) / total_length
-        return (left_weight * gini_index(left_y)) + (right_weight * gini_index(right_y))
+        p_left = len(left_y) / (len(left_y) + len(right_y))
+        p_right = 1 - p_left
+        return gini_index(left_y) * p_left + gini_index(right_y) * p_right
 
     def _mean_squared_error(self, left_y: pd.Series, right_y: pd.Series) -> float:
         """
-        Computes the mean squared error (MSE) of a split.
-
-        Args:
-            left_y (pd.Series): Target vector for the left branch.
-            right_y (pd.Series): Target vector for the right branch.
-
-        Returns:
-            float: The mean squared error of the split.
+        Function to calculate the mean squared error (MSE)
         """
-        return (mean_squared_error(left_y) + mean_squared_error(right_y)) / 2
+        return (len(left_y) * mean_squared_error(left_y) + len(right_y) * mean_squared_error(right_y)) / (len(left_y) + len(right_y))
 
     def _most_common_label(self, y: pd.Series) -> Any:
         """
-        Returns the most common label in the series.
-
-        Args:
-            y (pd.Series): Target vector.
-
-        Returns:
-            Any: The most common label.
+        Function to return the most common label in the series
         """
-        return y.mode()[0]
+        return y.value_counts().idxmax()
 
     def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
         """
-        Predicts the class labels or values for the provided data.
-
-        Args:
-            X (Union[np.ndarray, pd.DataFrame]): Feature matrix.
-
-        Returns:
-            np.ndarray: The predicted labels or values.
+        Predict the class labels for the provided data.
         """
         if isinstance(X, np.ndarray):
             X = pd.DataFrame(X)
@@ -282,61 +163,51 @@ class DecisionTree:
 
     def _predict(self, sample: pd.Series, tree: Any) -> Any:
         """
-        Traverses the tree to get the prediction for a single sample.
-
-        Args:
-            sample (pd.Series): A single data point.
-            tree (Any): The structure of the tree node or the label/value if a leaf node is reached.
-
-        Returns:
-            Any: The predicted label or value.
+        Traverse the tree to get the prediction for a single sample.
         """
-        if isinstance(tree, tuple):
-            feature, threshold, left_tree, right_tree = tree
-            if pd.api.types.is_numeric_dtype(sample[feature]):
-                if sample[feature] <= threshold:
-                    return self._predict(sample, left_tree)
-                else:
-                    return self._predict(sample, right_tree)
-            else:
-                if sample[feature] == threshold:
-                    return self._predict(sample, left_tree)
-                else:
-                    return self._predict(sample, right_tree)
-        else:
+        if not isinstance(tree, tuple):
             return tree
+        
+        feature, threshold, left_tree, right_tree = tree
+        if sample[feature] <= threshold:
+            return self._predict(sample, left_tree)
+        else:
+            return self._predict(sample, right_tree)
 
     def plot(self) -> None:
         """
-        Plots the structure of the decision tree.
-
-        Returns:
-            None
+        Function to plot the tree
         """
-        # Implement a tree visualization method here
-        pass
+        def plot_tree(tree, feature_names, depth=0):
+            if not isinstance(tree, tuple):
+                print(f"{'  ' * depth}Class: {tree}")
+                return
 
-    def get_params(self, deep: bool = True) -> dict:
+            feature, threshold, left_tree, right_tree = tree
+            feature_name = feature_names[feature]
+            print(f"{'  ' * depth}?({feature_name} <= {threshold})")
+            print(f"{'  ' * (depth + 1)}Y: ", end="")
+            plot_tree(left_tree, feature_names, depth + 1)
+            print(f"{'  ' * (depth + 1)}N: ", end="")
+            plot_tree(right_tree, feature_names, depth + 1)
+        
+        if self.tree_ is None:
+            print("The tree is not yet trained!")
+            return
+        
+        feature_names = {i: name for i, name in enumerate(self.X_.columns.tolist())}
+        plot_tree(self.tree_, feature_names)
+
+    def get_params(self, deep=True) -> dict:
         """
-        Returns the parameters of the DecisionTree object.
-
-        Args:
-            deep (bool): Whether to return the deep copy of parameters.
-
-        Returns:
-            dict: The parameters of the DecisionTree object.
+        Get parameters for this estimator.
         """
         return {"criterion": self.criterion, "max_depth": self.max_depth}
 
-    def set_params(self, **params) -> None:
+    def set_params(self, **params) -> 'DecisionTree':
         """
-        Sets the parameters of the DecisionTree object.
-
-        Args:
-            params (dict): Parameters to set.
-
-        Returns:
-            None
+        Set the parameters of this estimator.
         """
-        for key, value in params.items():
-            setattr(self, key, value)
+        for param, value in params.items():
+            setattr(self, param, value)
+        return self
