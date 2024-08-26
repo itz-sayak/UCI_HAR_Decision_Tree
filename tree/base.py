@@ -221,7 +221,6 @@ class DecisionTree:
 
     Returns:
     - Tuple[str, Any, float]: A tuple containing the best feature, the best threshold or category for splitting, and the best score achieved by this split.
-    """
         """
         best_feature = None
         best_threshold = None
@@ -250,7 +249,7 @@ class DecisionTree:
                         best_score = score
 
         return best_feature, best_threshold, best_score
-        """
+
 
     def split_data(self, X: pd.DataFrame, y: pd.Series, attribute: str, value: Any) -> Tuple[pd.Series, pd.Series]:
         """
