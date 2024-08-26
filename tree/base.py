@@ -250,6 +250,7 @@ class DecisionTree:
                         best_score = score
 
         return best_feature, best_threshold, best_score
+        """
 
     def split_data(self, X: pd.DataFrame, y: pd.Series, attribute: str, value: Any) -> Tuple[pd.Series, pd.Series]:
         """
