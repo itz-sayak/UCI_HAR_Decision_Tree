@@ -1,3 +1,90 @@
+"""
+base.py
+
+This module defines the `DecisionTree` class, an implementation of a decision tree algorithm
+for classification tasks. The `DecisionTree` class supports training, predicting, and visualizing
+the decision tree. It handles both numerical and categorical features and provides various
+criteria for splitting nodes.
+
+Imports:
+    - numpy (np): Library for numerical operations.
+    - pandas (pd): Library for data manipulation and analysis.
+    - typing: Provides type hinting for variables and function signatures.
+    - dataclasses: Provides a decorator to automatically generate special methods for classes.
+
+Classes:
+    DecisionTree:
+        Attributes:
+            criterion (Literal["information_gain", "gini_index"]): Criterion for splitting nodes.
+                Can be "information_gain" or "gini_index".
+            max_depth (int): Maximum depth of the tree. Defaults to 5.
+            tree_ (Any): The trained decision tree. Initially `None` and set after training.
+
+        Methods:
+            __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 5):
+                Initializes the decision tree with the given criterion and maximum depth.
+
+            fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]) -> None:
+                Trains the decision tree using the input features `X` and target values `y`.
+
+            _fit(self, X: pd.DataFrame, y: pd.Series, depth: int) -> Any:
+                Recursive function to construct the decision tree. Used internally by `fit`.
+
+            _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
+                Determines the best feature and threshold for splitting the data based on the chosen criterion.
+
+            split_data(self, X: pd.DataFrame, y: pd.Series, attribute: str, value: Any) -> Tuple[pd.Series, pd.Series]:
+                Splits the data into two subsets based on the given attribute and value.
+
+            _calculate_score(self, left_y: pd.Series, right_y: pd.Series) -> float:
+                Calculates the score for a split based on the criterion.
+
+            _information_gain(self, left_y: pd.Series, right_y: pd.Series) -> float:
+                Computes the information gain from a split.
+
+            _gini_index(self, left_y: pd.Series, right_y: pd.Series) -> float:
+                Computes the Gini index from a split.
+
+            _mean_squared_error(self, left_y: pd.Series, right_y: pd.Series) -> float:
+                Computes the mean squared error (MSE) from a split.
+
+            _most_common_label(self, y: pd.Series) -> Any:
+                Returns the most common label in the series.
+
+            predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+                Predicts class labels for the provided data.
+
+            _predict(self, sample: pd.Series, tree: Any) -> Any:
+                Traverses the decision tree to get the prediction for a single sample.
+
+            plot(self) -> None:
+                Prints a textual representation of the decision tree.
+
+            get_params(self, deep=True) -> dict:
+                Returns the parameters of the decision tree.
+
+            set_params(self, **params) -> 'DecisionTree':
+                Sets the parameters of the decision tree.
+
+Usage Example:
+    from tree.base import DecisionTree
+
+    # Initialize and train the decision tree
+    dt = DecisionTree(criterion="gini_index", max_depth=3)
+    dt.fit(X_train, y_train)
+
+    # Predict using the trained tree
+    predictions = dt.predict(X_test)
+
+    # Plot the decision tree
+    dt.plot()
+
+Notes:
+    - The `fit` method preprocesses the input data and constructs the tree using recursive methods.
+    - The `predict` method traverses the constructed tree to generate predictions for new data.
+    - The `plot` method provides a basic textual representation of the tree structure, useful for debugging and understanding the tree's decisions.
+"""
+
 
 import numpy as np
 import pandas as pd
