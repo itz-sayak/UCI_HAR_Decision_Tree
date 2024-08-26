@@ -81,7 +81,7 @@ Usage Example:
 Notes:
     - The `fit` method preprocesses the input data and constructs the tree using recursive methods.
     - The `predict` method traverses the constructed tree to generate predictions for new data.
-    - The `plot` method provides a basic textual representation of the tree structure, useful for debugging and understanding the tree's decisions.
+    - The `plot` method provides a basic textual representation of the tree structure.
 """
 
 
