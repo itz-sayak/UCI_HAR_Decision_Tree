@@ -190,7 +190,38 @@ class DecisionTree:
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
         """
-        Function to find the best split based on the criterion.
+        Finds the best feature and threshold for splitting the data based on the criterion.
+
+    This method evaluates all possible splits in the dataset to determine the optimal feature and threshold (or value) for partitioning the data. The chosen split is the one that maximizes or minimizes the score, depending on the criterion. The process is as follows:
+
+    1. **Initialize Best Values**:
+       - The method initializes variables to keep track of the best feature, best threshold, and best score. The initial best score is set to negative infinity for criteria where higher scores are better (e.g., information gain, Gini index) and positive infinity for criteria where lower scores are better (e.g., mean squared error).
+
+    2. **Iterate Over Features**:
+       - The method loops through each feature in the dataset to evaluate potential splits.
+
+    3. **Evaluate Numeric Features**:
+       - The method evaluates all unique values in the feature as potential thresholds for numeric features. For each threshold:
+         - The data is split into left and right subsets based on the threshold.
+         - The score for this split is calculated using the `_calculate_score` method.
+         - If the score for the split is better (higher or lower, depending on the criterion) than the current best score, the feature, threshold, and score are updated.
+
+    4. **Evaluate Categorical Features**:
+       - The method evaluates each unique category as a potential split point for categorical features. For each category:
+         - The data is split into left and right subsets based on the category.
+         - The score for this split is calculated using the `_calculate_score` method.
+         - If the score for the split is better (higher or lower, depending on the criterion) than the current best score, the feature, category, and score are updated.
+
+    5. **Return Best Split**:
+       - The method returns the feature and threshold (or category) that resulted in the best score, along with the best score itself.
+
+    Parameters:
+    - X (pd.DataFrame): The features of the dataset.
+    - y (pd.Series): The labels of the dataset.
+
+    Returns:
+    - Tuple[str, Any, float]: A tuple containing the best feature, the best threshold or category for splitting, and the best score achieved by this split.
+    """
         """
         best_feature = None
         best_threshold = None
