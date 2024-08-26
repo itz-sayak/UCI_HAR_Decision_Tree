@@ -89,6 +89,7 @@ import numpy as np
 import pandas as pd
 from typing import Literal, Union, Tuple, Any
 from dataclasses import dataclass
+from sklearn.preprocessing import OneHotEncoder
 from .utils import entropy, gini_index, mean_squared_error
 
 @dataclass
@@ -96,66 +97,36 @@ class DecisionTree:
     criterion: Literal["information_gain", "gini_index"]
     max_depth: int
 
-    def __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 5):
+    def __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 10):
         self.criterion = criterion
         self.max_depth = max_depth
         self.tree_ = None
+        self.encoder = None
+        self.feature_names = None
 
     def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]) -> None:
-        """
-        Function to train and construct the decision tree
-        """
         if isinstance(X, np.ndarray):
             X = pd.DataFrame(X)
         if isinstance(y, np.ndarray):
             y = pd.Series(y)
+
+        X.columns = X.columns.astype(str)
         
+        # Identify categorical features and apply one-hot encoding
+        categorical_cols = X.select_dtypes(include=['category']).columns
+        if len(categorical_cols) > 0:
+            self.encoder = OneHotEncoder(drop='first', sparse_output=False)
+            X_encoded = pd.DataFrame(self.encoder.fit_transform(X[categorical_cols]), 
+                                     columns=self.encoder.get_feature_names_out(categorical_cols))
+            X = pd.concat([X.drop(columns=categorical_cols), X_encoded], axis=1)
+
+        self.feature_names = X.columns.tolist()
         self.X_ = X
         self.y_ = y
         self.n_features_ = X.shape[1]
         self.tree_ = self._fit(X, y, depth=0)
 
     def _fit(self, X: pd.DataFrame, y: pd.Series, depth: int) -> Any:
-        """
-    Recursively constructs the decision tree.
-
-    This method builds the decision tree by recursively splitting the data based on the best feature and threshold. It operates as follows:
-
-    1. Check if All Labels are the Same:
-       - If all the labels in the current subset `y` are the same, the method returns this label as the result for this node. This indicates that the node is a leaf node with a single class.
-
-    2. Check if Maximum Depth is Reached:
-       - If the current depth of the tree has reached the specified `max_depth`, the method returns the most common label in `y`. This prevents the tree from growing beyond the specified depth.
-
-    3. Check if Dataset is Empty:
-       - If the dataset `X` is empty, the method returns the most common label in `y`. This handles cases where a split results in an empty dataset.
-
-    4. Find the Best Feature and Threshold:
-       - The method calls `_best_split` to determine the best feature and threshold (or value) for splitting the data based on the chosen criterion (`criterion`). It evaluates all possible splits and selects the one that provides the best score.
-
-    5. Handle Cases with No Valid Split:
-       - If no valid split is found (i.e., no feature provides an improvement), the method returns the most common label in `y`.
-
-    6. Determine How to Split the Data:
-       - Depending on whether the best feature is numeric or categorical, the dataset `X` is split into left and right subsets based on the best threshold or category. Numeric features are split using a threshold, while categorical features are split using equality.
-
-    7. Check for Empty Splits:
-       - If the left or right subset resulting from the split is empty, the method returns the most common label in `y` to avoid further processing with an empty dataset.
-
-    8. Recursively Build Subtrees:
-       - The method recursively calls itself to build the left and right subtrees using the left and right subsets of the data. The `depth` parameter is incremented by 1 for each recursive call to track the depth of the tree.
-
-    9. Return the Current Node:
-       - The method returns a tuple representing the current node of the tree. This tuple includes the best feature, threshold for the split, and left and right subtrees.
-
-    Parameters:
-    - X (pd.DataFrame): The features of the dataset.
-    - y (pd.Series): The labels of the dataset.
-    - depth (int): The current depth of the tree.
-
-    Returns:
-    - Any: A tuple representing the current node of the tree if further splitting is possible; otherwise, a leaf node with a class label.
-    """
         unique_classes = y.unique()
         if len(unique_classes) == 1:
             return unique_classes[0]
@@ -171,13 +142,9 @@ class DecisionTree:
         if best_feature is None:
             return self._most_common_label(y)
         
-        if pd.api.types.is_numeric_dtype(X[best_feature]):
-            left_indices = X[best_feature] <= best_threshold
-            right_indices = X[best_feature] > best_threshold
-        else:
-            left_indices = X[best_feature] == best_threshold
-            right_indices = X[best_feature] != best_threshold
-        
+        left_indices = X[best_feature] <= best_threshold
+        right_indices = X[best_feature] > best_threshold
+
         if left_indices.sum() == 0 or right_indices.sum() == 0:
             return self._most_common_label(y)
 
@@ -186,7 +153,29 @@ class DecisionTree:
         
         return (best_feature, best_threshold, left_tree, right_tree)
 
-    
+    def _predict(self, sample: pd.Series, tree: Any) -> Any:
+        if not isinstance(tree, tuple):
+            return tree
+        
+        feature, threshold, left_tree, right_tree = tree
+        if sample[feature] <= threshold:
+            return self._predict(sample, left_tree)
+        else:
+            return self._predict(sample, right_tree)
+
+    def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+        if isinstance(X, np.ndarray):
+            X = pd.DataFrame(X)
+        
+        # If the model was trained with one-hot encoded features, apply the same transformation to the input data
+        if self.encoder:
+            categorical_cols = X.select_dtypes(include=['category']).columns
+            if len(categorical_cols) > 0:
+                X_encoded = pd.DataFrame(self.encoder.transform(X[categorical_cols]), 
+                                         columns=self.encoder.get_feature_names_out(categorical_cols))
+                X = pd.concat([X.drop(columns=categorical_cols), X_encoded], axis=1)
+
+        return np.array([self._predict(sample, self.tree_) for _, sample in X.iterrows()])
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
         """
@@ -308,57 +297,37 @@ class DecisionTree:
         """
         return y.value_counts().idxmax()
 
-    def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
-        """
-        Predict the class labels for the provided data.
-        """
-        if isinstance(X, np.ndarray):
-            X = pd.DataFrame(X)
-        
-        return np.array([self._predict(sample, self.tree_) for _, sample in X.iterrows()])
-
-    def _predict(self, sample: pd.Series, tree: Any) -> Any:
-        """
-        Traverse the tree to get the prediction for a single sample.
-        """
-        if not isinstance(tree, tuple):
-            return tree
-        
-        feature, threshold, left_tree, right_tree = tree
-        if sample[feature] <= threshold:
-            return self._predict(sample, left_tree)
-        else:
-            return self._predict(sample, right_tree)
 
     def plot(self) -> None:
-        """
-        Function to plot the tree
-        """
-        def plot_tree(tree, feature_names, depth=0):
-            if not isinstance(tree, tuple):
-                print(f"{'  ' * depth}Class: {tree}")
-                return
-
-            feature, threshold, left_tree, right_tree = tree
-            feature_name = feature_names[feature]
-            print(f"{'  ' * depth}?({feature_name} <= {threshold})")
-            print(f"{'  ' * (depth + 1)}Y: ", end="")
-            plot_tree(left_tree, feature_names, depth + 1)
-            print(f"{'  ' * (depth + 1)}N: ", end="")
-            plot_tree(right_tree, feature_names, depth + 1)
-        
-        if self.tree_ is None:
-            print("The tree is not yet trained!")
+      """
+    Function to plot the tree
+      """
+      def plot_tree(tree, feature_names, depth=0):
+        if not isinstance(tree, tuple):
+            print(f"{'  ' * depth}Class: {tree}")
             return
-        
-        feature_names = {i: name for i, name in enumerate(self.X_.columns.tolist())}
-        plot_tree(self.tree_, feature_names)
+
+        feature, threshold, left_tree, right_tree = tree
+        feature_name = feature_names[feature] if feature in feature_names else str(feature)
+        print(f"{'  ' * depth}?({feature_name} <= {threshold})")
+        print(f"{'  ' * (depth + 1)}Y: ", end="")
+        plot_tree(left_tree, feature_names, depth + 1)
+        print(f"{'  ' * (depth + 1)}N: ", end="")
+        plot_tree(right_tree, feature_names, depth + 1)
+    
+      if self.tree_ is None:
+        print("The tree is not yet trained!")
+        return
+    
+    # Use the column names from the DataFrame as feature names
+      feature_names = {col: name for col, name in enumerate(self.X_.columns.tolist())}
+      plot_tree(self.tree_, feature_names)
 
     def get_params(self, deep=True) -> dict:
-        """
-        Get parameters for this estimator.
-        """
-        return {"criterion": self.criterion, "max_depth": self.max_depth}
+      """
+      Get parameters for this estimator.
+      """
+      return {"criterion": self.criterion, "max_depth": self.max_depth}
 
     def set_params(self, **params) -> 'DecisionTree':
         """
