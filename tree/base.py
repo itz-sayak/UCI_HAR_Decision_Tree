@@ -117,8 +117,45 @@ class DecisionTree:
 
     def _fit(self, X: pd.DataFrame, y: pd.Series, depth: int) -> Any:
         """
-        Recursive function to construct the tree.
-        """
+    Recursively constructs the decision tree.
+
+    This method builds the decision tree by recursively splitting the data based on the best feature and threshold. It operates as follows:
+
+    1. Check if All Labels are the Same:
+       - If all the labels in the current subset `y` are the same, the method returns this label as the result for this node. This indicates that the node is a leaf node with a single class.
+
+    2. Check if Maximum Depth is Reached:
+       - If the current depth of the tree has reached the specified `max_depth`, the method returns the most common label in `y`. This prevents the tree from growing beyond the specified depth.
+
+    3. Check if Dataset is Empty:
+       - If the dataset `X` is empty, the method returns the most common label in `y`. This handles cases where a split results in an empty dataset.
+
+    4. Find the Best Feature and Threshold:
+       - The method calls `_best_split` to determine the best feature and threshold (or value) for splitting the data based on the chosen criterion (`criterion`). It evaluates all possible splits and selects the one that provides the best score.
+
+    5. Handle Cases with No Valid Split:
+       - If no valid split is found (i.e., no feature provides an improvement), the method returns the most common label in `y`.
+
+    6. Determine How to Split the Data:
+       - Depending on whether the best feature is numeric or categorical, the dataset `X` is split into left and right subsets based on the best threshold or category. Numeric features are split using a threshold, while categorical features are split using equality.
+
+    7. Check for Empty Splits:
+       - If the left or right subset resulting from the split is empty, the method returns the most common label in `y` to avoid further processing with an empty dataset.
+
+    8. Recursively Build Subtrees:
+       - The method recursively calls itself to build the left and right subtrees using the left and right subsets of the data. The `depth` parameter is incremented by 1 for each recursive call to track the depth of the tree.
+
+    9. Return the Current Node:
+       - The method returns a tuple representing the current node of the tree. This tuple includes the best feature, threshold for the split, and left and right subtrees.
+
+    Parameters:
+    - X (pd.DataFrame): The features of the dataset.
+    - y (pd.Series): The labels of the dataset.
+    - depth (int): The current depth of the tree.
+
+    Returns:
+    - Any: A tuple representing the current node of the tree if further splitting is possible; otherwise, a leaf node with a class label.
+    """
         unique_classes = y.unique()
         if len(unique_classes) == 1:
             return unique_classes[0]
@@ -148,6 +185,8 @@ class DecisionTree:
         right_tree = self._fit(X[right_indices], y[right_indices], depth + 1)
         
         return (best_feature, best_threshold, left_tree, right_tree)
+
+    
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
         """
