@@ -190,7 +190,7 @@ class DecisionTree:
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
         """
-        Finds the best feature and threshold for splitting the data based on the criterion.
+    Finds the best feature and threshold for splitting the data based on the criterion.
 
     This method evaluates all possible splits in the dataset to determine the optimal feature and threshold (or value) for partitioning the data. The chosen split is the one that maximizes or minimizes the score, depending on the criterion. The process is as follows:
 
