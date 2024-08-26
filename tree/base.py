@@ -1,16 +1,15 @@
 """
-base.py
 
-This module defines the `DecisionTree` class, an implementation of a decision tree algorithm
+This module defines the `DecisionTree` class, implementing a decision tree algorithm
 for classification tasks. The `DecisionTree` class supports training, predicting, and visualizing
-the decision tree. It handles both numerical and categorical features and provides various
+the decision tree. It handles numerical and categorical features and provides various
 criteria for splitting nodes.
 
 Imports:
     - numpy (np): Library for numerical operations.
     - pandas (pd): Library for data manipulation and analysis.
     - typing: Provides type hinting for variables and function signatures.
-    - dataclasses: Provides a decorator to automatically generate special methods for classes.
+    - dataclasses: Provides a decorator to generate special methods for classes automatically.
 
 Classes:
     DecisionTree:
@@ -18,7 +17,7 @@ Classes:
             criterion (Literal["information_gain", "gini_index"]): Criterion for splitting nodes.
                 Can be "information_gain" or "gini_index".
             max_depth (int): Maximum depth of the tree. Defaults to 5.
-            tree_ (Any): The trained decision tree. Initially `None` and set after training.
+            tree_ (Any): The trained decision tree. Initially, it is `None` and set after training.
 
         Methods:
             __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 5):
