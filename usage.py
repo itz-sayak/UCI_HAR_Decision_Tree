@@ -13,6 +13,9 @@ P = 5
 X = pd.DataFrame(np.random.randn(N, P))
 y = pd.Series(np.random.randn(N))
 
+print("\n" + "-"*50)  # Separator line
+print(f"Criteria : mse\n")
+
 # Use MSE for real outputs
 tree = DecisionTree(criterion="mse")  # Initialize tree with MSE criterion
 tree.fit(X, y)  # Fit the tree with data
@@ -81,6 +84,9 @@ N = 30
 P = 5
 X = pd.DataFrame({i: pd.Series(np.random.randint(P, size=N), dtype="category") for i in range(5)})
 y = pd.Series(np.random.randn(N))
+
+print("\n" + "-"*50)  # Separator line
+print(f"Criteria : mse\n")
 
 # Use MSE for real outputs
 tree = DecisionTree(criterion="mse")  # Initialize tree with MSE criterion
