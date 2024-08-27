@@ -13,19 +13,16 @@ P = 5
 X = pd.DataFrame(np.random.randn(N, P))
 y = pd.Series(np.random.randn(N))
 
-for criteria in ["information_gain", "gini_index"]:
-    print("\n" + "-"*50)  # Separator line
-    print(f"Criteria : {criteria}\n")
-    
-    tree = DecisionTree(criterion=criteria)  # Initialize tree with criterion
-    tree.fit(X, y)  # Fit the tree with data
-    
-    y_hat = tree.predict(X)  # Make predictions
-    
-    tree.plot()  # Plot the decision tree
-    
-    print(f"\nRMSE: {rmse(y_hat, y)}")
-    print(f"MAE: {mae(y_hat, y)}\n")
+# Use MSE for real outputs
+tree = DecisionTree(criterion="mse")  # Initialize tree with MSE criterion
+tree.fit(X, y)  # Fit the tree with data
+
+y_hat = tree.predict(X)  # Make predictions
+
+tree.plot()  # Plot the decision tree
+
+print(f"\nRMSE: {rmse(y_hat, y)}")
+print(f"MAE: {mae(y_hat, y)}\n")
 
 
 # Test Case 2: Real Input and Discrete Output
@@ -85,16 +82,13 @@ P = 5
 X = pd.DataFrame({i: pd.Series(np.random.randint(P, size=N), dtype="category") for i in range(5)})
 y = pd.Series(np.random.randn(N))
 
-for criteria in ["information_gain", "gini_index"]:
-    print("\n" + "-"*50)  # Separator line
-    print(f"Criteria : {criteria}\n")
-    
-    tree = DecisionTree(criterion=criteria)  # Initialize tree with criterion
-    tree.fit(X, y)  # Fit the tree with data
-    
-    y_hat = tree.predict(X)  # Make predictions
-    
-    tree.plot()  # Plot the decision tree
-    
-    print(f"\nRMSE: {rmse(y_hat, y)}")
-    print(f"MAE: {mae(y_hat, y)}\n")
+# Use MSE for real outputs
+tree = DecisionTree(criterion="mse")  # Initialize tree with MSE criterion
+tree.fit(X, y)  # Fit the tree with data
+
+y_hat = tree.predict(X)  # Make predictions
+
+tree.plot()  # Plot the decision tree
+
+print(f"\nRMSE: {rmse(y_hat, y)}")
+print(f"MAE: {mae(y_hat, y)}\n")
