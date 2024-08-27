@@ -84,7 +84,6 @@ Notes:
     - The `plot` method provides a basic textual representation of the tree structure.
 """
 
-
 import numpy as np
 import pandas as pd
 from typing import Literal, Union, Tuple, Any
@@ -94,10 +93,10 @@ from .utils import entropy, gini_index, mean_squared_error
 
 @dataclass
 class DecisionTree:
-    criterion: Literal["information_gain", "gini_index"]
+    criterion: Literal["information_gain", "gini_index", "mse"]
     max_depth: int
 
-    def __init__(self, criterion: Literal["information_gain", "gini_index"], max_depth: int = 10):
+    def __init__(self, criterion: Literal["information_gain", "gini_index", "mse"], max_depth: int = 10):
         self.criterion = criterion
         self.max_depth = max_depth
         self.tree_ = None
@@ -178,39 +177,6 @@ class DecisionTree:
         return np.array([self._predict(sample, self.tree_) for _, sample in X.iterrows()])
 
     def _best_split(self, X: pd.DataFrame, y: pd.Series) -> Tuple[str, Any, float]:
-        """
-    Finds the best feature and threshold for splitting the data based on the criterion.
-
-    This method evaluates all possible splits in the dataset to determine the optimal feature and threshold (or value) for partitioning the data. The chosen split is the one that maximizes or minimizes the score, depending on the criterion. The process is as follows:
-
-    1. Initialize Best Values:
-       - The method initializes variables to keep track of the best feature, best threshold, and best score. The initial best score is set to negative infinity for criteria where higher scores are better (e.g., information gain, Gini index) and positive infinity for criteria where lower scores are better (e.g., mean squared error).
-
-    2. Iterate Over Features:
-       - The method loops through each feature in the dataset to evaluate potential splits.
-
-    3. Evaluate Numeric Features:
-       - The method evaluates all unique values in the feature as potential thresholds for numeric features. For each threshold:
-         - The data is split into left and right subsets based on the threshold.
-         - The score for this split is calculated using the `_calculate_score` method.
-         - If the score for the split is better (higher or lower, depending on the criterion) than the current best score, the feature, threshold, and score are updated.
-
-    4. Evaluate Categorical Features:
-       - The method evaluates each unique category as a potential split point for categorical features. For each category:
-         - The data is split into left and right subsets based on the category.
-         - The score for this split is calculated using the `_calculate_score` method.
-         - If the score for the split is better (higher or lower, depending on the criterion) than the current best score, the feature, category, and score are updated.
-
-    5. Return Best Split:
-       - The method returns the feature and threshold (or category) that resulted in the best score, along with the best score itself.
-
-    Parameters:
-    - X (pd.DataFrame): The features of the dataset.
-    - y (pd.Series): The labels of the dataset.
-
-    Returns:
-    - Tuple[str, Any, float]: A tuple containing the best feature, the best threshold or category for splitting, and the best score achieved by this split.
-        """
         best_feature = None
         best_threshold = None
         best_score = -float('inf') if self.criterion in ["information_gain", "gini_index"] else float('inf')
@@ -241,9 +207,6 @@ class DecisionTree:
 
 
     def split_data(self, X: pd.DataFrame, y: pd.Series, attribute: str, value: Any) -> Tuple[pd.Series, pd.Series]:
-        """
-        Function to split the data according to an attribute.
-        """
         if pd.api.types.is_numeric_dtype(X[attribute]):
             left_mask = X[attribute] <= value
             right_mask = X[attribute] > value
@@ -254,9 +217,6 @@ class DecisionTree:
         return y[left_mask], y[right_mask]
 
     def _calculate_score(self, left_y: pd.Series, right_y: pd.Series) -> float:
-        """
-        Function to calculate the score for the split
-        """
         if self.criterion == "information_gain":
             return self._information_gain(left_y, right_y)
         elif self.criterion == "gini_index":
@@ -265,9 +225,6 @@ class DecisionTree:
             return self._mean_squared_error(left_y, right_y)
 
     def _information_gain(self, left_y: pd.Series, right_y: pd.Series) -> float:
-        """
-        Function to calculate the information gain
-        """
         total_length = len(left_y) + len(right_y)
         total_entropy = entropy(pd.concat([left_y, right_y]))
     
@@ -278,61 +235,41 @@ class DecisionTree:
         return total_entropy - weighted_entropy
 
     def _gini_index(self, left_y: pd.Series, right_y: pd.Series) -> float:
-        """
-        Function to calculate the Gini index
-        """
         p_left = len(left_y) / (len(left_y) + len(right_y))
         p_right = 1 - p_left
         return gini_index(left_y) * p_left + gini_index(right_y) * p_right
 
     def _mean_squared_error(self, left_y: pd.Series, right_y: pd.Series) -> float:
-        """
-        Function to calculate the mean squared error (MSE)
-        """
         return (len(left_y) * mean_squared_error(left_y) + len(right_y) * mean_squared_error(right_y)) / (len(left_y) + len(right_y))
 
     def _most_common_label(self, y: pd.Series) -> Any:
-        """
-        Function to return the most common label in the series
-        """
         return y.value_counts().idxmax()
 
-
     def plot(self) -> None:
-      """
-    Function to plot the tree
-      """
-      def plot_tree(tree, feature_names, depth=0):
-        if not isinstance(tree, tuple):
-            print(f"{'  ' * depth}Class: {tree}")
+        def plot_tree(tree, feature_names, depth=0):
+            if not isinstance(tree, tuple):
+                print(f"{'  ' * depth}Class: {tree}")
+                return
+
+            feature, threshold, left_tree, right_tree = tree
+            feature_name = feature_names[feature] if feature in feature_names else str(feature)
+            print(f"{'  ' * depth}?({feature_name} <= {threshold})")
+            print(f"{'  ' * (depth + 1)}Y: ", end="")
+            plot_tree(left_tree, feature_names, depth + 1)
+            print(f"{'  ' * (depth + 1)}N: ", end="")
+            plot_tree(right_tree, feature_names, depth + 1)
+
+        if self.tree_ is None:
+            print("The tree is not yet trained!")
             return
 
-        feature, threshold, left_tree, right_tree = tree
-        feature_name = feature_names[feature] if feature in feature_names else str(feature)
-        print(f"{'  ' * depth}?({feature_name} <= {threshold})")
-        print(f"{'  ' * (depth + 1)}Y: ", end="")
-        plot_tree(left_tree, feature_names, depth + 1)
-        print(f"{'  ' * (depth + 1)}N: ", end="")
-        plot_tree(right_tree, feature_names, depth + 1)
-    
-      if self.tree_ is None:
-        print("The tree is not yet trained!")
-        return
-    
-    # Use the column names from the DataFrame as feature names
-      feature_names = {col: name for col, name in enumerate(self.X_.columns.tolist())}
-      plot_tree(self.tree_, feature_names)
+        feature_names = {col: name for col, name in enumerate(self.X_.columns.tolist())}
+        plot_tree(self.tree_, feature_names)
 
     def get_params(self, deep=True) -> dict:
-      """
-      Get parameters for this estimator.
-      """
-      return {"criterion": self.criterion, "max_depth": self.max_depth}
+        return {"criterion": self.criterion, "max_depth": self.max_depth}
 
     def set_params(self, **params) -> 'DecisionTree':
-        """
-        Set the parameters of this estimator.
-        """
         for param, value in params.items():
             setattr(self, param, value)
         return self
